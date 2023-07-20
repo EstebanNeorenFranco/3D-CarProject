@@ -4,6 +4,16 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 const Model3D = () => {
   const mountRef = useRef(null);
+  const moveDistance = 0.1; // Distancia base de movimiento
+  const moveSpeedMultiplier = 2; // Multiplicador para aumentar la velocidad
+
+  // Estado para rastrear qué teclas están siendo presionadas
+  const keys = {
+    w: false,
+    a: false,
+    s: false,
+    d: false,
+  };
 
   useEffect(() => {
     const currentRef = mountRef.current;
@@ -39,29 +49,27 @@ const Model3D = () => {
     scene.add(pointLight);
 
     const clock = new THREE.Clock();
-    const moveDistance = 0.1; // La distancia que se mueve el cubo por cada tecla presionada
 
-    const handleKeyDown = (event) => {
-      switch (event.key) {
-        case 'w':
-          cube.position.z -= moveDistance;
-          break;
-        case 's':
-          cube.position.z += moveDistance;
-          break;
-        case 'a':
-          cube.position.x -= moveDistance;
-          break;
-        case 'd':
-          cube.position.x += moveDistance;
-          break;
-        default:
-          break;
+    // Función para actualizar la posición del cubo en función de las teclas presionadas
+    const updateCubePosition = () => {
+      if (keys.w) {
+        cube.position.z -= moveDistance * moveSpeedMultiplier;
+      }
+      if (keys.s) {
+        cube.position.z += moveDistance * moveSpeedMultiplier;
+      }
+      if (keys.a) {
+        cube.position.x -= moveDistance * moveSpeedMultiplier;
+      }
+      if (keys.d) {
+        cube.position.x += moveDistance * moveSpeedMultiplier;
       }
     };
 
     const animate = () => {
       const elapsedTime = clock.getElapsedTime();
+
+      updateCubePosition(); // Llama a la función de actualización de posición
 
       controls.update();
       renderer.render(scene, camera);
@@ -76,14 +84,26 @@ const Model3D = () => {
       camera.updateProjectionMatrix();
     };
 
+    const handleKeyDown = (event) => {
+      // Marca la tecla como presionada
+      keys[event.key] = true;
+    };
+
+    const handleKeyUp = (event) => {
+      // Marca la tecla como no presionada
+      keys[event.key] = false;
+    };
+
     window.addEventListener('resize', resize);
-    window.addEventListener('keydown', handleKeyDown); // Agregar el evento de escucha para las teclas
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp); // Agregar evento de escucha para el levantamiento de teclas
 
     animate();
 
     return () => {
       window.removeEventListener('resize', resize);
-      window.removeEventListener('keydown', handleKeyDown); // Eliminar el evento al desmontar el componente
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp); // Eliminar eventos al desmontar el componente
       currentRef.removeChild(renderer.domElement);
     };
   }, []);
