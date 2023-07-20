@@ -1,6 +1,7 @@
 import { useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
 const Model3D = () => {
   const mountRef = useRef(null);
@@ -14,6 +15,8 @@ const Model3D = () => {
     s: false,
     d: false,
   };
+
+  let model; // Referencia al modelo 3D cargado
 
   useEffect(() => {
     const currentRef = mountRef.current;
@@ -34,42 +37,61 @@ const Model3D = () => {
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
 
-    const geometry = new THREE.BoxGeometry(1, 1, 1);
-    const material = new THREE.MeshPhongMaterial({ color: '#8181F7' });
-    const cube = new THREE.Mesh(geometry, material);
+    const loader = new GLTFLoader();
+    loader.load(
+      '/assets/Models/suv.gltf', // Ruta al archivo glb o gltf del modelo
+      (gltf) => {
+        // Callback cuando el modelo ha sido cargado
+        model = gltf.scene;
+        scene.add(model); // Agregar el modelo a la escena
+        // Puedes ajustar la posición, escala u orientación del modelo aquí si es necesario
+      },
+      undefined,
+      (error) => {
+        console.error('Error al cargar el modelo:', error);
+      }
+    );
 
-    scene.add(cube);
-    camera.lookAt(cube.position);
+    camera.lookAt(new THREE.Vector3(0, 0, 0)); // Ajustar la cámara para mirar hacia el origen
 
-    const ambientalLight = new THREE.AmbientLight(0x404040, 5);
+    const ambientalLight = new THREE.AmbientLight(0xff0000, 15);
     scene.add(ambientalLight);
 
-    const pointLight = new THREE.PointLight(0xff0000, 5);
+    const pointLight = new THREE.PointLight(0xffffff, 1);
     pointLight.position.set(8, 8, 8);
     scene.add(pointLight);
 
     const clock = new THREE.Clock();
 
-    // Función para actualizar la posición del cubo en función de las teclas presionadas
     const updateCubePosition = () => {
+      if (!model) return; // Salir si el modelo no está cargado
+
+      // Obtener la posición actual del modelo
+      const modelPosition = new THREE.Vector3();
+      modelPosition.copy(model.position);
+
+      // Actualizar la posición del modelo según las teclas presionadas
       if (keys.w) {
-        cube.position.z -= moveDistance * moveSpeedMultiplier;
-      }
-      if (keys.s) {
-        cube.position.z += moveDistance * moveSpeedMultiplier;
+        modelPosition.z -= moveDistance * moveSpeedMultiplier;
       }
       if (keys.a) {
-        cube.position.x -= moveDistance * moveSpeedMultiplier;
+        modelPosition.x -= moveDistance * moveSpeedMultiplier;
+      }
+      if (keys.s) {
+        modelPosition.z += moveDistance * moveSpeedMultiplier;
       }
       if (keys.d) {
-        cube.position.x += moveDistance * moveSpeedMultiplier;
+        modelPosition.x += moveDistance * moveSpeedMultiplier;
       }
+
+      // Aplicar la nueva posición al modelo
+      model.position.copy(modelPosition);
     };
 
     const animate = () => {
       const elapsedTime = clock.getElapsedTime();
 
-      updateCubePosition(); // Llama a la función de actualización de posición
+      updateCubePosition();
 
       controls.update();
       renderer.render(scene, camera);
@@ -85,25 +107,23 @@ const Model3D = () => {
     };
 
     const handleKeyDown = (event) => {
-      // Marca la tecla como presionada
       keys[event.key] = true;
     };
 
     const handleKeyUp = (event) => {
-      // Marca la tecla como no presionada
       keys[event.key] = false;
     };
 
     window.addEventListener('resize', resize);
     window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp); // Agregar evento de escucha para el levantamiento de teclas
+    window.addEventListener('keyup', handleKeyUp);
 
     animate();
 
     return () => {
       window.removeEventListener('resize', resize);
       window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp); // Eliminar eventos al desmontar el componente
+      window.removeEventListener('keyup', handleKeyUp);
       currentRef.removeChild(renderer.domElement);
     };
   }, []);

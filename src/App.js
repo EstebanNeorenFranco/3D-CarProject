@@ -1,5 +1,5 @@
 
-import Model3D from "./components/Model3D";
+import Model3D from "./Model3D";
 
 function App() {
   return (
